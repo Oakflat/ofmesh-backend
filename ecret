@@ -1,0 +1,49 @@
+[35mmvnw[m[36m:[m#   MVNW_USERNAME/MVNW_[1;31mPASSWORD[m - user and [1;31mpassword[m for downloading maven
+[35mmvnw[m[36m:[m  unset MVNW_VERBOSE MVNW_USERNAME MVNW_[1;31mPASSWORD[m MVNW_REPOURL || :
+[35mmvnw[m[36m:[mcase "${MVNW_[1;31mPASSWORD[m:+has-[1;31mpassword[m}" in
+[35mmvnw[m[36m:[m'') MVNW_USERNAME='' MVNW_[1;31mPASSWORD[m='' ;;
+[35mmvnw[m[36m:[mhas-[1;31mpassword[m) [ -n "${MVNW_USERNAME-}" ] || MVNW_USERNAME='' MVNW_[1;31mPASSWORD[m='' ;;
+[35mmvnw[m[36m:[m	  protected java.net.[1;31mPassword[mAuthentication get[1;31mPassword[mAuthentication()
+[35mmvnw[m[36m:[m	    return new java.net.[1;31mPassword[mAuthentication( System.getenv( "MVNW_USERNAME" ), System.getenv( "MVNW_[1;31mPASSWORD[m" ).toCharArray() );
+[35mmvnw.cmd[m[36m:[m@REM   MVNW_USERNAME/MVNW_[1;31mPASSWORD[m - user and [1;31mpassword[m for downloading maven
+[35mmvnw.cmd[m[36m:[m@SET MVNW_[1;31mPASSWORD[m=
+[35mmvnw.cmd[m[36m:[mif ($env:MVNW_USERNAME -and $env:MVNW_[1;31mPASSWORD[m) {
+[35mmvnw.cmd[m[36m:[m  $webclient.Credentials = New-Object System.Net.NetworkCredential($env:MVNW_USERNAME, $env:MVNW_[1;31mPASSWORD[m)
+[35msrc/main/java/com/ofmesh/backend/config/SecurityConfig.java[m[36m:[mimport org.springframework.security.crypto.bcrypt.BCrypt[1;31mPassword[mEncoder;
+[35msrc/main/java/com/ofmesh/backend/config/SecurityConfig.java[m[36m:[mimport org.springframework.security.crypto.[1;31mpassword[m.[1;31mPassword[mEncoder;
+[35msrc/main/java/com/ofmesh/backend/config/SecurityConfig.java[m[36m:[mimport org.springframework.security.web.authentication.Username[1;31mPassword[mAuthenticationFilter;
+[35msrc/main/java/com/ofmesh/backend/config/SecurityConfig.java[m[36m:[m                .addFilterBefore(jwtAuthFilter, Username[1;31mPassword[mAuthenticationFilter.class);
+[35msrc/main/java/com/ofmesh/backend/config/SecurityConfig.java[m[36m:[m        authProvider.set[1;31mPassword[mEncoder([1;31mpassword[mEncoder());
+[35msrc/main/java/com/ofmesh/backend/config/SecurityConfig.java[m[36m:[m    public [1;31mPassword[mEncoder [1;31mpassword[mEncoder() {
+[35msrc/main/java/com/ofmesh/backend/config/SecurityConfig.java[m[36m:[m        return new BCrypt[1;31mPassword[mEncoder();
+[35msrc/main/java/com/ofmesh/backend/controller/AuthController.java[m[36m:[mimport com.ofmesh.backend.dto.[1;31mPassword[mResetRequest;
+[35msrc/main/java/com/ofmesh/backend/controller/AuthController.java[m[36m:[m    @PostMapping("/reset-[1;31mpassword[m")
+[35msrc/main/java/com/ofmesh/backend/controller/AuthController.java[m[36m:[m    public ResponseEntity<String> reset[1;31mPassword[m(@RequestBody [1;31mPassword[mResetRequest request) {
+[35msrc/main/java/com/ofmesh/backend/controller/AuthController.java[m[36m:[m            authService.reset[1;31mPassword[m(request);
+[35msrc/main/java/com/ofmesh/backend/dto/LoginRequest.java[m[36m:[m    private String [1;31mpassword[m;
+[35msrc/main/java/com/ofmesh/backend/dto/LoginRequest.java[m[36m:[m    public String get[1;31mPassword[m() { return [1;31mpassword[m; }
+[35msrc/main/java/com/ofmesh/backend/dto/LoginRequest.java[m[36m:[m    public void set[1;31mPassword[m(String [1;31mpassword[m) { this.[1;31mpassword[m = [1;31mpassword[m; }
+[35msrc/main/java/com/ofmesh/backend/dto/PasswordResetRequest.java[m[36m:[mpublic class [1;31mPassword[mResetRequest {
+[35msrc/main/java/com/ofmesh/backend/dto/PasswordResetRequest.java[m[36m:[m    private String new[1;31mPassword[m;
+[35msrc/main/java/com/ofmesh/backend/dto/PasswordResetRequest.java[m[36m:[m    public String getNew[1;31mPassword[m() {
+[35msrc/main/java/com/ofmesh/backend/dto/PasswordResetRequest.java[m[36m:[m        return new[1;31mPassword[m;
+[35msrc/main/java/com/ofmesh/backend/dto/PasswordResetRequest.java[m[36m:[m    public void setNew[1;31mPassword[m(String new[1;31mPassword[m) {
+[35msrc/main/java/com/ofmesh/backend/dto/PasswordResetRequest.java[m[36m:[m        this.new[1;31mPassword[m = new[1;31mPassword[m;
+[35msrc/main/java/com/ofmesh/backend/dto/RegisterRequest.java[m[36m:[m    private String [1;31mpassword[m;
+[35msrc/main/java/com/ofmesh/backend/dto/RegisterRequest.java[m[36m:[m    public String get[1;31mPassword[m() { return [1;31mpassword[m; }
+[35msrc/main/java/com/ofmesh/backend/dto/RegisterRequest.java[m[36m:[m    public void set[1;31mPassword[m(String [1;31mpassword[m) { this.[1;31mpassword[m = [1;31mpassword[m; }
+[35msrc/main/java/com/ofmesh/backend/entity/User.java[m[36m:[m    private String [1;31mpassword[m;
+[35msrc/main/java/com/ofmesh/backend/entity/User.java[m[36m:[m    public String get[1;31mPassword[m() { return [1;31mpassword[m; }
+[35msrc/main/java/com/ofmesh/backend/entity/User.java[m[36m:[m    public void set[1;31mPassword[m(String [1;31mpassword[m) { this.[1;31mpassword[m = [1;31mpassword[m; }
+[35msrc/main/java/com/ofmesh/backend/security/JwtAuthenticationFilter.java[m[36m:[mimport org.springframework.security.authentication.Username[1;31mPassword[mAuthenticationToken;
+[35msrc/main/java/com/ofmesh/backend/security/JwtAuthenticationFilter.java[m[36m:[m                Username[1;31mPassword[mAuthenticationToken authToken = new Username[1;31mPassword[mAuthenticationToken(
+[35msrc/main/java/com/ofmesh/backend/service/AuthService.java[m[36m:[mimport com.ofmesh.backend.dto.[1;31mPassword[mResetRequest;
+[35msrc/main/java/com/ofmesh/backend/service/AuthService.java[m[36m:[mimport org.springframework.security.authentication.Username[1;31mPassword[mAuthenticationToken;
+[35msrc/main/java/com/ofmesh/backend/service/AuthService.java[m[36m:[mimport org.springframework.security.crypto.[1;31mpassword[m.[1;31mPassword[mEncoder;
+[35msrc/main/java/com/ofmesh/backend/service/AuthService.java[m[36m:[m    private final [1;31mPassword[mEncoder [1;31mpassword[mEncoder;
+[35msrc/main/java/com/ofmesh/backend/service/AuthService.java[m[36m:[m                       [1;31mPassword[mEncoder [1;31mpassword[mEncoder,
+[35msrc/main/java/com/ofmesh/backend/service/AuthService.java[m[36m:[m        this.[1;31mpassword[mEncoder = [1;31mpassword[mEncoder;
+[35msrc/main/java/com/ofmesh/backend/service/AuthService.java[m[36m:[m        user.set[1;31mPassword[m([1;31mpassword[mEncoder.encode(request.get[1;31mPassword[m()));
+[35msrc/main/java/com/ofmesh/backend/service/AuthService.java[m[36m:[m                new Username[1;31mPassword[mAuthenticationToken(request.getUsername(), request.get[1;31mPassword[m())
+[35msrc/main/java/com/ofmesh/backend/service/AuthService.java[m[36m:[m    public void reset[1;31mPassword[m([1;31mPassword[mResetRequest request) {
+[35msrc/main/java/com/ofmesh/backend/service/AuthService.java[m[36m:[m        user.set[1;31mPassword[m([1;31mpassword[mEncoder.encode(request.getNew[1;31mPassword[m()));
