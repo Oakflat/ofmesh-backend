@@ -1,0 +1,32 @@
+# ===== Maven =====
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# ===== Logs =====
+*.log
+
+# ===== IDE =====
+.idea/
+*.iml
+.vscode/
+
+# ===== OS =====
+.DS_Store
+
+# ===== Env / Spring Boot =====
+.env
+
+# ❗关键：主配置文件也不进仓
+src/main/resources/application.yml
+
+# profile-specific configs
+src/main/resources/application-local.yml
+src/main/resources/application-prod.yml
+src/main/resources/application-*.yml
+
+# example file allowed
+!src/main/resources/application.yml.example
+
+# ===== Secrets =====
+*.key
+*.pem
