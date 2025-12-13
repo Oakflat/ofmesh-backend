@@ -1,6 +1,8 @@
 package com.ofmesh.backend.controller;
 
 import com.ofmesh.backend.dto.GrantBadgeRequest;
+import com.ofmesh.backend.entity.User;
+import com.ofmesh.backend.repository.UserRepository;
 import com.ofmesh.backend.service.BadgeService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -12,36 +14,31 @@ import org.springframework.web.bind.annotation.*;
 public class AdminBadgeController {
 
     private final BadgeService badgeService;
+    private final UserRepository userRepository;
 
-    public AdminBadgeController(BadgeService badgeService) {
+    public AdminBadgeController(BadgeService badgeService, UserRepository userRepository) {
         this.badgeService = badgeService;
+        this.userRepository = userRepository;
     }
 
-    /**
-     * 手动发放徽章接口
-     * POST /api/admin/badges/grant
-     * Body: { "userId": 1, "badgeKey": "founder" }
-     */
+    private Long currentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) throw new RuntimeException("未登录");
+
+        String key = auth.getName(); // 通常是 username（JwtUtil 里 subject）
+        return userRepository.findByUsername(key)
+                .or(() -> userRepository.findByEmail(key))
+                .map(User::getId)
+                .orElseThrow(() -> new RuntimeException("无法识别当前操作者"));
+    }
+
     @PostMapping("/grant")
     public ResponseEntity<String> grantBadge(@RequestBody GrantBadgeRequest request) {
-        // 1. 获取当前操作管理员的 ID (从 SecurityContext 拿)
-        // 这一步是为了审计：必须知道是谁点击了发放按钮
-        // 假设 UserDetails 里的 username 是 ID 或者能查到 ID，这里简化处理：
-        // Long adminId = currentUserService.getId();
-        Long adminId = 1L; // ⚠️ 初期狂野模式：暂时写死为 1号管理员，后期对接真实 ID
-
-        try {
-            badgeService.grantBadge(request.getUserId(), request.getBadgeKey(), adminId);
-            return ResponseEntity.ok("徽章发放成功！");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        Long adminId = currentUserId();
+        badgeService.grantBadge(request.getUserId(), request.getBadgeKey(), adminId);
+        return ResponseEntity.ok("徽章发放成功！");
     }
 
-    /**
-     * 撤销徽章
-     * DELETE /api/admin/badges/revoke?userId=1&badgeKey=founder
-     */
     @DeleteMapping("/revoke")
     public ResponseEntity<String> revokeBadge(@RequestParam Long userId, @RequestParam String badgeKey) {
         badgeService.revokeBadge(userId, badgeKey);

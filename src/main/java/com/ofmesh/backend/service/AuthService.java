@@ -15,6 +15,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.AuthenticationException;
 
 import java.time.LocalDate;
 import java.util.Random;
@@ -150,11 +151,28 @@ public class AuthService {
     // 3. 登录业务
     // ==========================================
     public String login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
-        );
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
+        String key = request.getLoginKey();
+        if (key == null || key.isBlank()) {
+            throw new RuntimeException("账号不能为空");
+        }
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new RuntimeException("密码不能为空");
+        }
+
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(key, request.getPassword())
+            );
+        } catch (AuthenticationException ex) {
+            // 不要暴露“账号不存在/密码不对”，统一口径
+            throw new RuntimeException("账号或密码错误");
+        }
+
+        User user = userRepository.findByUsername(key)
+                .or(() -> userRepository.findByEmail(key))
+                .orElseThrow(() -> new RuntimeException("账号或密码错误"));
+
+        // ✅ token 里永远塞 username（不要塞 email），后续鉴权最稳定
         return jwtUtil.generateToken(user.getUsername());
     }
 

@@ -1,8 +1,9 @@
 package com.ofmesh.backend.entity;
 
-// 这是一个独立的枚举文件，不要写在 User 类里面！
 public enum Role {
     USER,
+    STAFF,        // 未来发起工单，但不能直接改权限
+    MODERATOR,
     ADMIN,
-    MODERATOR
+    SUPER_ADMIN   // 最高权限（比如 uid=0001）
 }
