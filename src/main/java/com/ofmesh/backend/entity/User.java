@@ -77,11 +77,10 @@ public class User implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // 防御性编程：如果 role 为空，给一个默认角色，或者返回空列表
         if (role == null) {
             return List.of(new SimpleGrantedAuthority("ROLE_USER"));
         }
-        return List.of(new SimpleGrantedAuthority(role.name()));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     @Override

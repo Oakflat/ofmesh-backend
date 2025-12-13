@@ -18,6 +18,9 @@ public class AuthController {
         this.authService = authService;
     }
 
+    @GetMapping("/ping")
+    public String ping() { return "ok"; }
+
     // ==========================================
     // 1. 发送验证码 (通用接口，或区分注册/重置)
     // ==========================================
