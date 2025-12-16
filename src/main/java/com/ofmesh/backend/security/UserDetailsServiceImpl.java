@@ -1,28 +1,37 @@
 package com.ofmesh.backend.security;
 
+import com.ofmesh.backend.entity.AccountStatus;
 import com.ofmesh.backend.entity.User;
 import com.ofmesh.backend.repository.UserRepository;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 @Service
-// @RequiredArgsConstructor ❌ 删掉它
 public class UserDetailsServiceImpl implements UserDetailsService {
 
     private final UserRepository userRepository;
 
-    // ✅ 手动添加构造函数
     public UserDetailsServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
     @Override
-    public UserDetails loadUserByUsername(String input) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(input)
-                .or(() -> userRepository.findByEmail(input))
+    public UserDetails loadUserByUsername(String loginKey) throws UsernameNotFoundException {
+        User user = userRepository.findByUsername(loginKey)
+                .or(() -> userRepository.findByEmail(loginKey))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        // 封禁判断：永久封禁（banUntil=null）或未到期封禁，都直接拒绝
+        if (user.getAccountStatus() == AccountStatus.BANNED) {
+            LocalDateTime now = LocalDateTime.now();
+            if (user.getBanUntil() == null || user.getBanUntil().isAfter(now)) {
+                throw new DisabledException("账号已封禁: " + (user.getBanReason() == null ? "" : user.getBanReason()));
+            }
+        }
+
         return user;
     }
 }
