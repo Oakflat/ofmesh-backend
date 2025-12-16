@@ -4,7 +4,8 @@ import com.ofmesh.backend.entity.Role;
 import com.ofmesh.backend.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,8 +22,9 @@ public class AdminStatsService {
 
     public Map<String, Object> overview() {
         long total = userRepository.count();
-        long new24h = userRepository.countByCreatedAtAfter(LocalDateTime.now().minusHours(24));
-        long new7d = userRepository.countByCreatedAtAfter(LocalDateTime.now().minusDays(7));
+        OffsetDateTime nowUtc = OffsetDateTime.now(ZoneOffset.UTC);
+        long new24h = userRepository.countByCreatedAtAfter(nowUtc.minusHours(24));
+        long new7d = userRepository.countByCreatedAtAfter(nowUtc.minusDays(7));
 
         // ✅ key 用 String（Role.name()），避免 EnumMap 泛型问题，同时 JSON 友好
         Map<String, Long> roleCounts = new HashMap<>();

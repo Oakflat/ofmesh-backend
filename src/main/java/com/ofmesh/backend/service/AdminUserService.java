@@ -1,6 +1,7 @@
 package com.ofmesh.backend.service;
 
 import com.ofmesh.backend.dto.AdminUserDTO;
+import com.ofmesh.backend.entity.AccountStatus;
 import com.ofmesh.backend.entity.User;
 import com.ofmesh.backend.repository.UserRepository;
 import org.springframework.data.domain.*;
@@ -44,9 +45,15 @@ public class AdminUserService {
         dto.email = u.getEmail();
         dto.role = (u.getRole() == null) ? "USER" : u.getRole().name();
 
-        dto.accountStatus = (u.getAccountStatus() == null) ? "ACTIVE" : u.getAccountStatus().name();
-        dto.banUntil = u.getBanUntil();
-        dto.banReason = u.getBanReason();
+        AccountStatus status = (u.getAccountStatus() == null) ? AccountStatus.ACTIVE : u.getAccountStatus();
+        dto.accountStatus = status.name();
+        if (status == AccountStatus.BANNED) {
+            dto.banUntil = u.getBanUntil();
+            dto.banReason = u.getBanReason();
+        } else {
+            dto.banUntil = null;
+            dto.banReason = null;
+        }
         dto.createdAt = u.getCreatedAt();
         return dto;
     }

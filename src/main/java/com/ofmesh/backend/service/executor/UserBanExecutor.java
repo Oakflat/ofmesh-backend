@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeParseException;
 
 @Component
@@ -43,15 +44,15 @@ public class UserBanExecutor implements AdminRequestExecutor {
             String untilStr = node.path("until").asText(null);
             String banReason = node.path("banReason").asText(null);
 
-            LocalDateTime until = null;
+            OffsetDateTime until = null;
 
             if (!permanent) {
                 if (untilStr == null || untilStr.isBlank()) {
                     throw new RuntimeException("非永久封禁必须提供 until");
                 }
-                until = parseToLocalDateTime(untilStr);
+                until = parseUntil(untilStr);
 
-                if (!until.isAfter(LocalDateTime.now())) {
+                if (!until.isAfter(OffsetDateTime.now(ZoneOffset.UTC))) {
                     throw new RuntimeException("until 必须是未来时间");
                 }
             }
@@ -67,12 +68,12 @@ public class UserBanExecutor implements AdminRequestExecutor {
         }
     }
 
-    private LocalDateTime parseToLocalDateTime(String input) {
+    private OffsetDateTime parseUntil(String input) {
         try {
-            return LocalDateTime.parse(input);
+            return OffsetDateTime.parse(input).withOffsetSameInstant(ZoneOffset.UTC);
         } catch (DateTimeParseException ignore) {}
         try {
-            return OffsetDateTime.parse(input).toLocalDateTime();
+            return OffsetDateTime.of(LocalDateTime.parse(input), ZoneOffset.UTC);
         } catch (DateTimeParseException e) {
             throw new RuntimeException("until 时间格式不合法: " + input);
         }
