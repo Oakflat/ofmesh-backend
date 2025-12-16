@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 // import lombok.RequiredArgsConstructor; // ❌ 删掉这行引用
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -51,7 +52,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // 2. 如果 Token 有用户名，且当前上下文没有认证信息
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+            UserDetails userDetails;
+            try {
+                userDetails = this.userDetailsService.loadUserByUsername(username);
+            } catch (AuthenticationException ex) {
+                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"error\":\"账号状态异常，无法访问\"}");
+                return;
+            }
 
             // 3. 验证 Token 是否有效
             // 注意：这里需要确保 userDetails.getUsername() 不为 null

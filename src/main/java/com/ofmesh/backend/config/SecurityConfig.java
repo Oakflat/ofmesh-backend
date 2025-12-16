@@ -1,6 +1,5 @@
 package com.ofmesh.backend.config;
 
-import com.ofmesh.backend.repository.UserRepository;
 import com.ofmesh.backend.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,7 +11,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -74,21 +72,6 @@ public class SecurityConfig {
         return source;
     }
 
-    /**
-     * ✅ 关键：提供 UserDetailsService Bean
-     * 你的 JWT / 登录是用 username（token 里也塞 username），所以优先按 username 查。
-     * 但为了兼容 resetPassword 用 email，我们做一个 fallback：username 查不到再用 email 查。
-     */
-    @Bean
-    public UserDetailsService userDetailsService(UserRepository userRepository) {
-        return input -> userRepository.findByUsername(input)
-                .or(() -> userRepository.findByEmail(input))
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + input));
-    }
-
-    /**
-     * ✅ 关键：你当前版本没有 setUserDetailsService，所以用构造注入
-     */
     @Bean
     public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService,
                                                          PasswordEncoder passwordEncoder) {
