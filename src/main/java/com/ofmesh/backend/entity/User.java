@@ -150,9 +150,4 @@ public class User implements UserDetails {
         return !isCurrentlyBanned();
     }
 
-    // UserDetails 默认用 username 作为 principal
-    @Override
-    public String getUsername() {
-        return username;
-    }
 }
