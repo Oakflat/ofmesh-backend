@@ -11,12 +11,13 @@ import com.ofmesh.backend.utils.IpUtil; // ✅ 引入 IP 工具类
 import jakarta.servlet.http.HttpServletRequest; // ✅ 引入 Request
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.authentication.DisabledException;
+
 import com.ofmesh.backend.exception.AccountBannedException;
 
 
@@ -170,7 +171,7 @@ public class AuthService {
 
             // user 理论上存在；保险起见兜底
             throw new AccountBannedException(
-                    user == null ? null : user.getBanUntil(),   // 后面会改成 OffsetDateTime
+                    user == null ? null : user.getBanUntil(),
                     user == null ? null : user.getBanReason()
             );
         } catch (AuthenticationException ex) {

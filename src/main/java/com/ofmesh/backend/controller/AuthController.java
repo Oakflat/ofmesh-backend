@@ -1,17 +1,12 @@
 package com.ofmesh.backend.controller;
 
+import com.ofmesh.backend.dto.AuthErrorResponse;
+import com.ofmesh.backend.dto.AuthTokenResponse;
 import com.ofmesh.backend.dto.LoginRequest;
 import com.ofmesh.backend.dto.PasswordResetRequest;
 import com.ofmesh.backend.dto.RegisterRequest;
-import com.ofmesh.backend.service.AuthService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import com.ofmesh.backend.dto.AuthTokenResponse;
-import com.ofmesh.backend.dto.AuthErrorResponse;
-import com.ofmesh.backend.dto.LoginRequest;
 import com.ofmesh.backend.exception.AccountBannedException;
 import com.ofmesh.backend.service.AuthService;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -62,7 +57,7 @@ public class AuthController {
             // 2. 比对 code 是否一致
             // 3. 删除 redis key
             String token = authService.register(request);
-            return ResponseEntity.ok(new AuthResponse(token));
+            return ResponseEntity.ok(new AuthTokenResponse(token));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -74,8 +69,14 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        String token = authService.login(request);
-        return ResponseEntity.ok(new AuthTokenResponse(token));
+        try {
+            String token = authService.login(request);
+            return ResponseEntity.ok(new AuthTokenResponse(token));
+        } catch (AccountBannedException e) {
+            return ResponseEntity.status(403).body(AuthErrorResponse.banned(e.getBanUntil(), e.getBanReason()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(AuthErrorResponse.badCredentials());
+        }
     }
 
 
@@ -91,21 +92,6 @@ public class AuthController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
-    }
-
-    // 响应体记录类
-    record AuthResponse(String token) {}
-    @ExceptionHandler(AccountBannedException.class)
-    public ResponseEntity<AuthErrorResponse> handleBanned(AccountBannedException e) {
-        return ResponseEntity.status(403)
-                .body(AuthErrorResponse.banned(e.getBanUntil(), e.getBanReason()));
-    }
-
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<AuthErrorResponse> handleRuntime(RuntimeException e) {
-        // 这里建议只对登录相关 RuntimeException 这么做
-        // 你也可以更细：比如空账号/空密码返回 BAD_REQUEST
-        return ResponseEntity.badRequest().body(AuthErrorResponse.badCredentials());
     }
 
 }
