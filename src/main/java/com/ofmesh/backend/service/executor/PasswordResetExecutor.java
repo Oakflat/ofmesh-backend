@@ -13,6 +13,8 @@ import java.security.SecureRandom;
 @Component
 public class PasswordResetExecutor implements AdminRequestExecutor {
 
+    private static final int TEMP_PASSWORD_LEN = 12;
+
     private final UserRepository userRepo;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
@@ -33,12 +35,12 @@ public class PasswordResetExecutor implements AdminRequestExecutor {
         User target = userRepo.findById(request.getTargetUserId())
                 .orElseThrow(() -> new RuntimeException("目标用户不存在"));
 
-        String tempPassword = randomPassword(12);
+        String tempPassword = randomPassword(TEMP_PASSWORD_LEN);
         target.setPassword(passwordEncoder.encode(tempPassword));
         userRepo.save(target);
 
-        // 你需要在 EmailService 增加这个方法（下面我给补丁）
-        emailService.sendTemporaryPassword(target.getEmail(), tempPassword);
+        // ✅ 传 3 个参数：邮箱、用户名、临时密码
+        emailService.sendTemporaryPassword(target.getEmail(), target.getUsername(), tempPassword);
 
         return "临时密码已发送至用户邮箱";
     }
@@ -46,7 +48,7 @@ public class PasswordResetExecutor implements AdminRequestExecutor {
     private String randomPassword(int len) {
         String chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%";
         SecureRandom r = new SecureRandom();
-        StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder(len);
         for (int i = 0; i < len; i++) sb.append(chars.charAt(r.nextInt(chars.length())));
         return sb.toString();
     }
