@@ -27,13 +27,15 @@ public class AdminRequestController {
         throw new RuntimeException("无法获取当前用户");
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','MODERATOR')")
+    // ✅ 只能 ADMIN / SUPER_ADMIN 发起工单（按你们的新需求收紧）
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @PostMapping
     public AdminRequestDTO create(@RequestBody CreateAdminRequestRequest req) {
         return service.create(req, currentUserId());
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','MODERATOR')")
+    // ✅ 只能 ADMIN / SUPER_ADMIN 查看工单
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @GetMapping
     public Page<AdminRequestDTO> list(
             @RequestParam(required = false) String status,
@@ -44,9 +46,27 @@ public class AdminRequestController {
         return service.list(Optional.ofNullable(status), Optional.ofNullable(type), page, size);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','MODERATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
     @GetMapping("/{id}")
     public AdminRequestDTO get(@PathVariable Long id) {
         return service.get(id);
     }
+
+    // ✅ 只能 SUPER_ADMIN 批复同意（并执行）
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PostMapping("/{id}/approve")
+    public AdminRequestDTO approveAndExecute(@PathVariable Long id) {
+        return service.approveAndExecute(id, currentUserId());
+    }
+
+    // ✅ 只能 SUPER_ADMIN 驳回
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PostMapping("/{id}/reject")
+    public AdminRequestDTO reject(@PathVariable Long id, @RequestBody RejectRequest body) {
+        String reason = body == null ? null : body.reason();
+        return service.reject(id, currentUserId(), reason);
+    }
+
+    // 简单请求体：{ "reason": "xxx" }
+    public record RejectRequest(String reason) {}
 }

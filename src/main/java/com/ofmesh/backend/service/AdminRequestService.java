@@ -3,17 +3,17 @@ package com.ofmesh.backend.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ofmesh.backend.dto.AdminRequestDTO;
 import com.ofmesh.backend.dto.CreateAdminRequestRequest;
-import com.ofmesh.backend.entity.AdminRequest;
-import com.ofmesh.backend.entity.AdminRequestStatus;
-import com.ofmesh.backend.entity.AdminRequestType;
+import com.ofmesh.backend.entity.*;
 import com.ofmesh.backend.repository.AdminRequestRepository;
 import com.ofmesh.backend.repository.UserRepository;
+import com.ofmesh.backend.service.executor.AdminRequestExecutor;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import java.time.OffsetDateTime;
+import java.util.*;
 
 @Service
 public class AdminRequestService {
@@ -22,17 +22,71 @@ public class AdminRequestService {
     private final UserRepository userRepo;
     private final ObjectMapper objectMapper;
 
-    public AdminRequestService(AdminRequestRepository repo, UserRepository userRepo, ObjectMapper objectMapper) {
+    // ✅ executor 路由表：type -> executor
+    private final Map<AdminRequestType, AdminRequestExecutor> executorMap;
+
+    public AdminRequestService(
+            AdminRequestRepository repo,
+            UserRepository userRepo,
+            ObjectMapper objectMapper,
+            List<AdminRequestExecutor> executors
+    ) {
         this.repo = repo;
         this.userRepo = userRepo;
         this.objectMapper = objectMapper;
+
+        Map<AdminRequestType, AdminRequestExecutor> map = new EnumMap<>(AdminRequestType.class);
+        for (AdminRequestExecutor ex : executors) {
+            map.put(ex.supports(), ex);
+        }
+        this.executorMap = map;
+    }
+
+    private User mustUser(Long id) {
+        return userRepo.findById(id).orElseThrow(() -> new RuntimeException("操作者不存在"));
+    }
+
+    private AdminRequest mustRequest(Long id) {
+        return repo.findById(id).orElseThrow(() -> new RuntimeException("工单不存在"));
+    }
+
+    private void requireSuperAdmin(User u) {
+        if (u.getRole() != Role.SUPER_ADMIN) {
+            throw new RuntimeException("仅 SUPER_ADMIN 可批复/执行");
+        }
+    }
+
+    private void requireAdminOrSuperAdmin(User u) {
+        if (u.getRole() != Role.ADMIN && u.getRole() != Role.SUPER_ADMIN) {
+            throw new RuntimeException("仅 ADMIN / SUPER_ADMIN 可发起该类型工单");
+        }
     }
 
     public AdminRequestDTO create(CreateAdminRequestRequest req, Long actorUserId) {
+        User actor = mustUser(actorUserId);
+
         AdminRequestType type = AdminRequestType.valueOf(req.getType());
+
+        // ✅ 类型级权限收口：封禁/重置密码只能 ADMIN/SUPER_ADMIN 发起
+        if (type == AdminRequestType.USER_BAN || type == AdminRequestType.PASSWORD_RESET) {
+            requireAdminOrSuperAdmin(actor);
+        }
 
         // target 必须存在（避免脏工单）
         userRepo.findById(req.getTargetUserId()).orElseThrow(() -> new RuntimeException("目标用户不存在"));
+
+        // ✅ 防重复封禁工单（避免连点/刷接口）
+        if (type == AdminRequestType.USER_BAN) {
+            // 这里依赖你 repo 有 existsBy... 方法；如果没有，看下面第 2 节我给的 repo 增补
+            boolean exists = repo.existsByTypeAndTargetUserIdAndStatus(
+                    AdminRequestType.USER_BAN,
+                    req.getTargetUserId(),
+                    AdminRequestStatus.PENDING
+            );
+            if (exists) {
+                throw new RuntimeException("该用户已有待审批的封禁工单");
+            }
+        }
 
         AdminRequest ar = new AdminRequest();
         ar.setType(type);
@@ -69,7 +123,84 @@ public class AdminRequestService {
     }
 
     public AdminRequestDTO get(Long id) {
-        return toDTO(repo.findById(id).orElseThrow(() -> new RuntimeException("工单不存在")));
+        return toDTO(mustRequest(id));
+    }
+
+    // ✅ SUPER_ADMIN 批复同意：批复即执行
+    @Transactional
+    public AdminRequestDTO approveAndExecute(Long requestId, Long approverId) {
+        User approver = mustUser(approverId);
+        requireSuperAdmin(approver);
+
+        AdminRequest r = mustRequest(requestId);
+        if (r.getStatus() != AdminRequestStatus.PENDING) {
+            throw new RuntimeException("仅 PENDING 工单可审批，当前状态=" + r.getStatus());
+        }
+
+        // 先标记 APPROVED（有审计意义）
+        r.setStatus(AdminRequestStatus.APPROVED);
+        r.setApprovedBy(approverId);
+        r.setApprovedAt(OffsetDateTime.now());
+        repo.save(r);
+
+        AdminRequestExecutor executor = executorMap.get(r.getType());
+        if (executor == null) {
+            r.setStatus(AdminRequestStatus.FAILED);
+            r.setExecutedBy(approverId);
+            r.setExecutedAt(OffsetDateTime.now());
+            r.setResultMessage("未找到执行器: " + r.getType());
+            repo.save(r);
+            return toDTO(r);
+        }
+
+        // ✅ 双保险：禁止封禁 SUPER_ADMIN（即使 executor 忘写也挡住）
+        if (r.getType() == AdminRequestType.USER_BAN) {
+            User target = userRepo.findById(r.getTargetUserId())
+                    .orElseThrow(() -> new RuntimeException("目标用户不存在"));
+            if (target.getRole() == Role.SUPER_ADMIN) {
+                throw new RuntimeException("禁止封禁 SUPER_ADMIN");
+            }
+        }
+
+        try {
+            String msg = executor.execute(r, approver);
+
+            r.setStatus(AdminRequestStatus.EXECUTED);
+            r.setExecutedBy(approverId);
+            r.setExecutedAt(OffsetDateTime.now());
+            r.setResultMessage(msg);
+            repo.save(r);
+
+            return toDTO(r);
+        } catch (Exception e) {
+            r.setStatus(AdminRequestStatus.FAILED);
+            r.setExecutedBy(approverId);
+            r.setExecutedAt(OffsetDateTime.now());
+            r.setResultMessage(e.getMessage());
+            repo.save(r);
+
+            return toDTO(r);
+        }
+    }
+
+    // ✅ SUPER_ADMIN 驳回
+    @Transactional
+    public AdminRequestDTO reject(Long requestId, Long approverId, String reason) {
+        User approver = mustUser(approverId);
+        requireSuperAdmin(approver);
+
+        AdminRequest r = mustRequest(requestId);
+        if (r.getStatus() != AdminRequestStatus.PENDING) {
+            throw new RuntimeException("仅 PENDING 工单可驳回，当前状态=" + r.getStatus());
+        }
+
+        r.setStatus(AdminRequestStatus.REJECTED);
+        r.setApprovedBy(approverId);
+        r.setApprovedAt(OffsetDateTime.now());
+        r.setResultMessage((reason == null || reason.isBlank()) ? "REJECTED" : ("REJECTED: " + reason.trim()));
+        repo.save(r);
+
+        return toDTO(r);
     }
 
     private AdminRequestDTO toDTO(AdminRequest ar) {

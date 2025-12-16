@@ -31,6 +31,11 @@ public class UserBanExecutor implements AdminRequestExecutor {
         User target = userRepo.findById(request.getTargetUserId())
                 .orElseThrow(() -> new RuntimeException("目标用户不存在"));
 
+        // ✅ 最高权限保护：SUPER_ADMIN 不可被封
+        if (target.getRole() == Role.SUPER_ADMIN) {
+            throw new RuntimeException("禁止封禁 SUPER_ADMIN");
+        }
+
         try {
             JsonNode node = objectMapper.readTree(request.getPayload() == null ? "{}" : request.getPayload());
 
@@ -38,7 +43,6 @@ public class UserBanExecutor implements AdminRequestExecutor {
             String untilStr = node.path("until").asText(null);
             String banReason = node.path("banReason").asText(null);
 
-            // === 1) 解析封禁到期时间（与 User.banUntil: LocalDateTime 对齐） ===
             LocalDateTime until = null;
 
             if (!permanent) {
@@ -47,15 +51,13 @@ public class UserBanExecutor implements AdminRequestExecutor {
                 }
                 until = parseToLocalDateTime(untilStr);
 
-                // 防呆：until 必须在未来
                 if (!until.isAfter(LocalDateTime.now())) {
                     throw new RuntimeException("until 必须是未来时间");
                 }
             }
 
-            // === 2) 落库 ===
             target.setAccountStatus(AccountStatus.BANNED);
-            target.setBanUntil(until); // ✅ LocalDateTime
+            target.setBanUntil(until);
             target.setBanReason((banReason == null || banReason.isBlank()) ? "N/A" : banReason.trim());
             userRepo.save(target);
 
@@ -65,18 +67,10 @@ public class UserBanExecutor implements AdminRequestExecutor {
         }
     }
 
-    /**
-     * 兼容两种输入：
-     * - 2025-12-16T10:20:30        (LocalDateTime)
-     * - 2025-12-16T10:20:30+08:00  (OffsetDateTime)
-     * - 2025-12-16T02:20:30Z       (OffsetDateTime)
-     */
     private LocalDateTime parseToLocalDateTime(String input) {
         try {
             return LocalDateTime.parse(input);
-        } catch (DateTimeParseException ignore) {
-            // 尝试 OffsetDateTime
-        }
+        } catch (DateTimeParseException ignore) {}
         try {
             return OffsetDateTime.parse(input).toLocalDateTime();
         } catch (DateTimeParseException e) {

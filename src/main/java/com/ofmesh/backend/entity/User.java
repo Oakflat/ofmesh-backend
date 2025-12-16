@@ -39,13 +39,13 @@ public class User implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     private Role role;
+
     // ====== Account status / ban fields ======
 
     @Enumerated(EnumType.STRING)
     @Column(name = "account_status", nullable = false)
     private AccountStatus accountStatus = AccountStatus.ACTIVE;
 
-    // 兼容你现在的 LocalDateTime（数据库 timestamptz 也能映射，但最好统一为 timestamp）
     @Column(name = "ban_until")
     private LocalDateTime banUntil;
 
@@ -94,6 +94,15 @@ public class User implements UserDetails {
     public String getBanReason() { return banReason; }
     public void setBanReason(String banReason) { this.banReason = banReason; }
 
+    // ===== helper =====
+    private boolean isCurrentlyBanned() {
+        if (accountStatus != AccountStatus.BANNED) return false;
+        // banUntil == null => 永久封禁
+        if (banUntil == null) return true;
+        // banUntil 未来 => 仍在封禁期
+        return banUntil.isAfter(LocalDateTime.now());
+    }
+
     // === Security UserDetails 接口实现 ===
 
     @Override
@@ -107,12 +116,18 @@ public class User implements UserDetails {
     @Override
     public boolean isAccountNonExpired() { return true; }
 
+    // ✅ 绑定封禁态
     @Override
-    public boolean isAccountNonLocked() { return true; }
+    public boolean isAccountNonLocked() {
+        return !isCurrentlyBanned();
+    }
 
     @Override
     public boolean isCredentialsNonExpired() { return true; }
 
+    // ✅ 绑定封禁态
     @Override
-    public boolean isEnabled() { return true; }
+    public boolean isEnabled() {
+        return !isCurrentlyBanned();
+    }
 }
