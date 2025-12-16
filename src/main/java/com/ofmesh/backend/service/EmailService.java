@@ -18,41 +18,68 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
 
-    // 前端部署后的域名 (用于点击链接跳转)
-    // 暂时写 localhost，上线后改成 https://ofmesh.com
+    // 暂时写 localhost，上线后改成正式域名
     private static final String FRONTEND_URL = "http://localhost:5173";
 
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
     }
 
+    /**
+     * 统一的 HTML 邮件发送方法（内部复用）
+     */
     @Async
-    public void sendVerificationCode(String to, String code) {
+    public void sendHtml(String to, String subject, String htmlContent) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
             helper.setFrom("OfMesh 安全中心 <" + fromEmail + ">");
             helper.setTo(to);
-            helper.setSubject("OfMesh 身份验证"); // 标题简洁，去掉了【】以防被拦截
-
-            // 生成精美的 HTML 内容
-            String htmlContent = buildVerificationEmail(code, to);
-
-            helper.setText(htmlContent, true); // true = 开启 HTML 模式
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
 
             mailSender.send(message);
-            System.out.println("✅ [邮件服务] 验证码已发送至: " + to);
-
+            System.out.println("✅ [邮件服务] 已发送至: " + to + " / " + subject);
         } catch (MessagingException e) {
-            e.printStackTrace();
+            e.printStackTrace(); // 先保留，后续换 logger
             System.err.println("❌ [邮件服务] 发送失败: " + e.getMessage());
         }
     }
 
     /**
-     * 构建 HTML 邮件模板
-     * 使用 Java Text Blocks (三引号) 编写，所见即所得
+     * 发验证码邮件
+     */
+    public void sendVerificationCode(String to, String code) {
+        String subject = "OfMesh 身份验证";
+        String htmlContent = buildVerificationEmail(code, to);
+        sendHtml(to, subject, htmlContent);
+    }
+
+    /**
+     * 发临时密码邮件（管理员工单执行用）
+     */
+    public void sendTemporaryPassword(String toEmail, String username, String tempPassword) {
+        String subject = "OfMesh 临时密码（请尽快修改）";
+        String html = """
+            <div style="font-family:Arial,sans-serif;line-height:1.6">
+              <h2>OfMesh 临时密码</h2>
+              <p>你好，%s：</p>
+              <p>你的账号已生成临时密码，请使用下面密码登录：</p>
+              <div style="font-size:20px;font-weight:bold;padding:12px 16px;background:#f5f5f5;border-radius:8px;display:inline-block">
+                %s
+              </div>
+              <p style="margin-top:16px;color:#666">
+                为保障安全，请在登录后立即修改密码。如果这不是你本人操作，请尽快联系管理员。
+              </p>
+            </div>
+            """.formatted(username == null ? "" : username, tempPassword);
+
+        sendHtml(toEmail, subject, html);
+    }
+
+    /**
+     * 构建验证码 HTML 邮件模板
      */
     private String buildVerificationEmail(String code, String userEmail) {
         int currentYear = Year.now().getValue();
@@ -81,32 +108,30 @@ public class EmailService {
                     <div class="header">
                         <h1>OfMesh</h1>
                     </div>
-                    
+
                     <div class="content">
                         <h2 style="margin-top: 0; color: #1e293b;">身份验证</h2>
                         <p style="font-size: 16px; line-height: 1.6;">尊敬的用户：</p>
                         <p style="font-size: 16px; line-height: 1.6;">
                             您正在进行敏感操作（注册、登录或修改密码）。请使用下方的验证码完成验证。
                         </p>
-                        
+
                         <div class="code-box">
                             <span class="code">%s</span>
                         </div>
-                        
+
                         <p style="font-size: 14px; color: #64748b; text-align: center;">
                             验证码 <strong>5分钟</strong> 内有效。<br>
                             如果这不是您的操作，请忽略此邮件，您的账号是安全的。
                         </p>
                     </div>
-                    
+
                     <div class="footer">
                         <p>此邮件由系统自动发送，请勿直接回复。</p>
+                        <p>&copy; %d OfMesh Network. All rights reserved.</p>
                         <p>
-                            &copy; %d OfMesh Network. All rights reserved.
-                        </p>
-                        <p>
-                            <a href="%s/privacy" class="link">隐私政策</a> • 
-                            <a href="%s/terms" class="link">用户协议</a> • 
+                            <a href="%s/privacy" class="link">隐私政策</a> •
+                            <a href="%s/terms" class="link">用户协议</a> •
                             <a href="%s/help" class="link">帮助中心</a>
                         </p>
                         <p style="margin-top: 10px; color: #cbd5e1;">Sent to %s</p>

@@ -39,6 +39,18 @@ public class User implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     private Role role;
+    // ====== Account status / ban fields ======
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "account_status", nullable = false)
+    private AccountStatus accountStatus = AccountStatus.ACTIVE;
+
+    // 兼容你现在的 LocalDateTime（数据库 timestamptz 也能映射，但最好统一为 timestamp）
+    @Column(name = "ban_until")
+    private LocalDateTime banUntil;
+
+    @Column(name = "ban_reason", columnDefinition = "text")
+    private String banReason;
 
     @Column(updatable = false)
     private LocalDateTime createdAt;
@@ -72,6 +84,15 @@ public class User implements UserDetails {
     public void setRole(Role role) { this.role = role; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
+
+    public AccountStatus getAccountStatus() { return accountStatus; }
+    public void setAccountStatus(AccountStatus accountStatus) { this.accountStatus = accountStatus; }
+
+    public LocalDateTime getBanUntil() { return banUntil; }
+    public void setBanUntil(LocalDateTime banUntil) { this.banUntil = banUntil; }
+
+    public String getBanReason() { return banReason; }
+    public void setBanReason(String banReason) { this.banReason = banReason; }
 
     // === Security UserDetails 接口实现 ===
 
