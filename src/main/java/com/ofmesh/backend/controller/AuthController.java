@@ -6,6 +6,14 @@ import com.ofmesh.backend.dto.RegisterRequest;
 import com.ofmesh.backend.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.ofmesh.backend.dto.AuthTokenResponse;
+import com.ofmesh.backend.dto.AuthErrorResponse;
+import com.ofmesh.backend.dto.LoginRequest;
+import com.ofmesh.backend.exception.AccountBannedException;
+import com.ofmesh.backend.service.AuthService;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -66,12 +74,10 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        try {
-            return ResponseEntity.ok(new AuthResponse(authService.login(request)));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body("登录失败: " + e.getMessage());
-        }
+        String token = authService.login(request);
+        return ResponseEntity.ok(new AuthTokenResponse(token));
     }
+
 
     // ==========================================
     // 4. 忘记密码流程 (Day 2 讨论部分)
@@ -89,4 +95,17 @@ public class AuthController {
 
     // 响应体记录类
     record AuthResponse(String token) {}
+    @ExceptionHandler(AccountBannedException.class)
+    public ResponseEntity<AuthErrorResponse> handleBanned(AccountBannedException e) {
+        return ResponseEntity.status(403)
+                .body(AuthErrorResponse.banned(e.getBanUntil(), e.getBanReason()));
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<AuthErrorResponse> handleRuntime(RuntimeException e) {
+        // 这里建议只对登录相关 RuntimeException 这么做
+        // 你也可以更细：比如空账号/空密码返回 BAD_REQUEST
+        return ResponseEntity.badRequest().body(AuthErrorResponse.badCredentials());
+    }
+
 }

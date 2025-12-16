@@ -45,8 +45,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/error").permitAll()
 
-                        // ✅ 管理接口必须 ADMIN
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // ✅ 管理接口必须 ADMIN，让管理接口允许 SUPER_ADMIN 进入
+                        .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
 
                         .anyRequest().authenticated()
                 )
