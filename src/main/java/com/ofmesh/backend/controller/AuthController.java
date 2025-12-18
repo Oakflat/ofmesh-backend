@@ -1,5 +1,6 @@
 package com.ofmesh.backend.controller;
 
+import com.ofmesh.backend.dto.AuthBanResponse;
 import com.ofmesh.backend.dto.AuthErrorResponse;
 import com.ofmesh.backend.dto.AuthTokenResponse;
 import com.ofmesh.backend.dto.LoginRequest;
@@ -73,7 +74,7 @@ public class AuthController {
             String token = authService.login(request);
             return ResponseEntity.ok(new AuthTokenResponse(token));
         } catch (AccountBannedException e) {
-            return ResponseEntity.status(403).body(AuthErrorResponse.banned(e.getBanUntil(), e.getBanReason()));
+            return ResponseEntity.status(403).body(AuthBanResponse.banned(e.getBanUntil(), e.getBanReason()));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(AuthErrorResponse.badCredentials());
         }
