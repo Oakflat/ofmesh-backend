@@ -20,6 +20,10 @@ import org.springframework.security.core.AuthenticationException;
 
 import com.ofmesh.backend.exception.AccountBannedException;
 
+import com.ofmesh.backend.entity.AccountStatus;
+
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 import java.time.LocalDate;
 import java.util.Random;
@@ -159,19 +163,23 @@ public class AuthService {
         if (key == null || key.isBlank()) throw new RuntimeException("账号不能为空");
         if (request.getPassword() == null || request.getPassword().isBlank()) throw new RuntimeException("密码不能为空");
 
+        // ✅ 0) 封禁优先：不管密码是否正确，先查库判断是否仍在封禁期
+        User preUser = userRepository.findByUsername(key)
+                .or(() -> userRepository.findByEmail(key))
+                .orElse(null);
+
+        if (preUser != null && preUser.getAccountStatus() == AccountStatus.BANNED) {
+            OffsetDateTime until = preUser.getBanUntil();
+            boolean stillBanned = (until == null) || until.isAfter(OffsetDateTime.now(ZoneOffset.UTC));
+            if (stillBanned) {
+                throw new AccountBannedException(preUser.getBanUntil(), preUser.getBanReason());
+            }
+        }
+
+        // ✅ 1) 再走认证（这时剩下的失败就是 BAD_CREDENTIALS）
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(key, request.getPassword())
-            );
-        } catch (AccountStatusException ex) {
-            // ✅ 封禁等账号状态异常统一转成自定义异常
-            User user = userRepository.findByUsername(key)
-                    .or(() -> userRepository.findByEmail(key))
-                    .orElse(null);
-
-            throw new AccountBannedException(
-                    user == null ? null : user.getBanUntil(),
-                    user == null ? null : user.getBanReason()
             );
         } catch (AuthenticationException ex) {
             throw new RuntimeException("账号或密码错误");
@@ -183,6 +191,7 @@ public class AuthService {
 
         return jwtUtil.generateToken(user.getUsername());
     }
+
 
     // ==========================================
     // 4. 重置密码业务

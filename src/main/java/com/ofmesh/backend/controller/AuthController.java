@@ -73,13 +73,16 @@ public class AuthController {
         try {
             String token = authService.login(request);
             return ResponseEntity.ok(new AuthTokenResponse(token));
+
         } catch (AccountBannedException e) {
-            return ResponseEntity.status(403).body(AuthBanResponse.banned(e.getBanUntil(), e.getBanReason()));
+            return ResponseEntity.status(403)
+                    .body(AuthBanResponse.banned(e.getBanUntil(), e.getBanReason()));
+
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(AuthErrorResponse.badCredentials());
+            return ResponseEntity.badRequest()
+                    .body(AuthErrorResponse.badCredentials());
         }
     }
-
 
     // ==========================================
     // 4. 忘记密码流程 (Day 2 讨论部分)
