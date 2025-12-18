@@ -15,6 +15,7 @@ spring:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT:6379}
+      username: default
       password: ${REDIS_PASSWORD}
       database: ${REDIS_DB:0}
 
@@ -28,7 +29,6 @@ spring:
       mail.smtp.auth: true
       mail.smtp.ssl.enable: true
 
-  # ✅ UTC 化：JSON 统一按 UTC 输出/解析
   jackson:
     time-zone: UTC
 
@@ -38,6 +38,7 @@ spring:
     show-sql: false
     properties:
       hibernate:
+        dialect: ${HIBERNATE_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
         jdbc:
           time_zone: UTC
 

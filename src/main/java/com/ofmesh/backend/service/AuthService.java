@@ -11,12 +11,12 @@ import com.ofmesh.backend.utils.IpUtil; // ✅ 引入 IP 工具类
 import jakarta.servlet.http.HttpServletRequest; // ✅ 引入 Request
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.authentication.AccountStatusException;
 
 import com.ofmesh.backend.exception.AccountBannedException;
 
@@ -163,18 +163,18 @@ public class AuthService {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(key, request.getPassword())
             );
-        } catch (DisabledException ex) {
-            // ✅ 这里就是“账号被封禁”的分支
+        } catch (AccountStatusException ex) {
+            // ✅ 封禁 / 锁定 / 禁用 等账号状态类异常，统一走“封禁提示”
             User user = userRepository.findByUsername(key)
                     .or(() -> userRepository.findByEmail(key))
                     .orElse(null);
 
-            // user 理论上存在；保险起见兜底
             throw new AccountBannedException(
                     user == null ? null : user.getBanUntil(),
                     user == null ? null : user.getBanReason()
             );
         } catch (AuthenticationException ex) {
+            // ✅ 密码错误/不存在：统一口径
             throw new RuntimeException("账号或密码错误");
         }
 
