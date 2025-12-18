@@ -11,7 +11,7 @@ import com.ofmesh.backend.utils.IpUtil; // ✅ 引入 IP 工具类
 import jakarta.servlet.http.HttpServletRequest; // ✅ 引入 Request
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.AccountStatusException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -163,13 +163,12 @@ public class AuthService {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(key, request.getPassword())
             );
-        } catch (DisabledException ex) {
-            // ✅ 这里就是“账号被封禁”的分支
+        } catch (AccountStatusException ex) {
+            // ✅ 封禁等账号状态异常统一转成自定义异常
             User user = userRepository.findByUsername(key)
                     .or(() -> userRepository.findByEmail(key))
                     .orElse(null);
 
-            // user 理论上存在；保险起见兜底
             throw new AccountBannedException(
                     user == null ? null : user.getBanUntil(),
                     user == null ? null : user.getBanReason()

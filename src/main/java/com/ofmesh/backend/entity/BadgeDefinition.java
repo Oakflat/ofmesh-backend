@@ -1,7 +1,8 @@
 package com.ofmesh.backend.entity;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "badge_definitions")
@@ -37,7 +38,7 @@ public class BadgeDefinition {
     private Boolean isActive;
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     // --- 构造方法 ---
     public BadgeDefinition() {
@@ -74,10 +75,13 @@ public class BadgeDefinition {
     public Boolean getIsActive() { return isActive; }
     public void setIsActive(Boolean active) { isActive = active; }
 
+    public OffsetDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(OffsetDateTime createdAt) { this.createdAt = createdAt; }
+
     // 这是一个生命周期回调，插入前自动设置时间
     @PrePersist
     protected void onCreate() {
-        if (this.createdAt == null) this.createdAt = LocalDateTime.now();
+        if (this.createdAt == null) this.createdAt = OffsetDateTime.now(ZoneOffset.UTC);
         if (this.priority == null) this.priority = 0;
         if (this.isExclusive == null) this.isExclusive = false;
         if (this.isActive == null) this.isActive = true;

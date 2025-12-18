@@ -1,7 +1,8 @@
 package com.ofmesh.backend.entity;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "user_badges")
@@ -18,10 +19,10 @@ public class UserBadge {
     private String badgeKey;
 
     @Column(name = "granted_at")
-    private LocalDateTime grantedAt;
+    private OffsetDateTime grantedAt;
 
     @Column(name = "expire_at")
-    private LocalDateTime expireAt;
+    private OffsetDateTime expireAt;
 
     @Column(name = "granted_by")
     private Long grantedBy; // 0=系统
@@ -34,7 +35,7 @@ public class UserBadge {
     public UserBadge(Long userId, String badgeKey) {
         this.userId = userId;
         this.badgeKey = badgeKey;
-        this.grantedAt = LocalDateTime.now();
+        this.grantedAt = OffsetDateTime.now(ZoneOffset.UTC);
         this.grantedBy = 0L; // 默认为系统发放
     }
 
@@ -48,11 +49,11 @@ public class UserBadge {
     public String getBadgeKey() { return badgeKey; }
     public void setBadgeKey(String badgeKey) { this.badgeKey = badgeKey; }
 
-    public LocalDateTime getGrantedAt() { return grantedAt; }
-    public void setGrantedAt(LocalDateTime grantedAt) { this.grantedAt = grantedAt; }
+    public OffsetDateTime getGrantedAt() { return grantedAt; }
+    public void setGrantedAt(OffsetDateTime grantedAt) { this.grantedAt = grantedAt; }
 
-    public LocalDateTime getExpireAt() { return expireAt; }
-    public void setExpireAt(LocalDateTime expireAt) { this.expireAt = expireAt; }
+    public OffsetDateTime getExpireAt() { return expireAt; }
+    public void setExpireAt(OffsetDateTime expireAt) { this.expireAt = expireAt; }
 
     public Long getGrantedBy() { return grantedBy; }
     public void setGrantedBy(Long grantedBy) { this.grantedBy = grantedBy; }
