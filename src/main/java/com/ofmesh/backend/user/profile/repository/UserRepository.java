@@ -53,4 +53,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Page<User> searchAdminUsers(@Param("q") String q, Pageable pageable);
 
     List<User> findByAccountStatusAndBanUntilIsNotNullAndBanUntilLessThanEqual(AccountStatus accountStatus, OffsetDateTime now, PageRequest of);
+    @Query("""
+        select u from User u
+        where u.username = :key or u.email = :key
+    """)
+    Optional<User> findByLoginKey(@Param("key") String key);
 }

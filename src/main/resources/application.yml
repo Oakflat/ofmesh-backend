@@ -45,3 +45,13 @@ spring:
 jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:86400000}
+
+ofmesh:
+  progression:
+    internalToken: ${INTERNAL_TOKEN:CHANGE_ME}
+    levelThresholds: [0, 100, 250, 450, 700, 1000, 1400, 1900] # level=1..N
+    rules:
+      POST_CREATED: 5
+      REPLY_CREATED: 2
+      LIKE_RECEIVED: 1
+      REPORT_CONFIRMED: -10
