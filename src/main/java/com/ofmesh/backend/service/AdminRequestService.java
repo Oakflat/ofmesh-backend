@@ -1,5 +1,6 @@
 package com.ofmesh.backend.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ofmesh.backend.dto.AdminRequestDTO;
 import com.ofmesh.backend.dto.CreateAdminRequestRequest;
@@ -68,7 +69,10 @@ public class AdminRequestService {
         AdminRequestType type = AdminRequestType.valueOf(req.getType());
 
         // ✅ 类型级权限收口：封禁/重置密码只能 ADMIN/SUPER_ADMIN 发起
-        if (type == AdminRequestType.USER_BAN || type == AdminRequestType.PASSWORD_RESET) {
+        // ✅ 类型级权限收口：封禁/解封/重置密码只能 ADMIN/SUPER_ADMIN 发起
+        if (type == AdminRequestType.USER_BAN
+                || type == AdminRequestType.USER_UNBAN
+                || type == AdminRequestType.PASSWORD_RESET) {
             requireAdminOrSuperAdmin(actor);
         }
 
@@ -76,15 +80,15 @@ public class AdminRequestService {
         userRepo.findById(req.getTargetUserId()).orElseThrow(() -> new RuntimeException("目标用户不存在"));
 
         // ✅ 防重复封禁工单（避免连点/刷接口）
-        if (type == AdminRequestType.USER_BAN) {
-            // 这里依赖你 repo 有 existsBy... 方法；如果没有，看下面第 2 节我给的 repo 增补
+        // ✅ 防重复工单（避免连点/刷接口）
+        if (type == AdminRequestType.USER_BAN || type == AdminRequestType.USER_UNBAN) {
             boolean exists = repo.existsByTypeAndTargetUserIdAndStatus(
-                    AdminRequestType.USER_BAN,
+                    type,
                     req.getTargetUserId(),
                     AdminRequestStatus.PENDING
             );
             if (exists) {
-                throw new RuntimeException("该用户已有待审批的封禁工单");
+                throw new RuntimeException("该用户已有待审批的 " + type + " 工单");
             }
         }
 
@@ -95,11 +99,17 @@ public class AdminRequestService {
         ar.setReason(req.getReason());
         ar.setCreatedBy(actorUserId);
 
+        String payloadJson;
         try {
-            ar.setPayload(req.getPayload() == null ? null : objectMapper.writeValueAsString(req.getPayload()));
+            payloadJson = (req.getPayload() == null) ? null : objectMapper.writeValueAsString(req.getPayload());
         } catch (Exception e) {
             throw new RuntimeException("payload 序列化失败");
         }
+
+// ✅ 在 service 层统一 payload 字段（保证审计数据一致）
+        payloadJson = normalizePayload(type, payloadJson);
+
+        ar.setPayload(payloadJson);
 
         AdminRequest saved = repo.save(ar);
         return toDTO(saved);
@@ -220,4 +230,29 @@ public class AdminRequestService {
         dto.resultMessage = ar.getResultMessage();
         return dto;
     }
+    private String normalizePayload(AdminRequestType type, String payloadJson) {
+        if (payloadJson == null || payloadJson.isBlank()) return payloadJson;
+
+        try {
+            JsonNode node = objectMapper.readTree(payloadJson);
+            if (!node.isObject()) return payloadJson;
+
+            // 只对需要规范化的类型做
+            if (type == AdminRequestType.USER_BAN) {
+                // ✅ 统一 until -> banUntil
+                if (node.hasNonNull("until") && !node.hasNonNull("banUntil")) {
+                    ((com.fasterxml.jackson.databind.node.ObjectNode) node)
+                            .set("banUntil", node.get("until"));
+                    ((com.fasterxml.jackson.databind.node.ObjectNode) node).remove("until");
+                }
+            }
+
+            // USER_UNBAN 暂时不强制字段转换（后续你们定死 schema 再加也行）
+            return objectMapper.writeValueAsString(node);
+        } catch (Exception e) {
+            // 解析失败就不改，避免影响创建工单
+            return payloadJson;
+        }
+    }
+
 }

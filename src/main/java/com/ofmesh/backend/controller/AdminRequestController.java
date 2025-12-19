@@ -67,6 +67,20 @@ public class AdminRequestController {
         return service.reject(id, currentUserId(), reason);
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    @PostMapping("/ban")
+    public AdminRequestDTO createBan(@RequestBody CreateAdminRequestRequest req) {
+        req.setType("USER_BAN"); // 或者构造一个新的 DTO
+        return service.create(req, currentUserId());
+    }
+
+    @PreAuthorize("hasAnyRole('ADMIN','SUPER_ADMIN')")
+    @PostMapping("/unban")
+    public AdminRequestDTO createUnban(@RequestBody CreateAdminRequestRequest req) {
+        req.setType("USER_UNBAN");
+        return service.create(req, currentUserId());
+    }
+
     // 简单请求体：{ "reason": "xxx" }
     public record RejectRequest(String reason) {}
 }

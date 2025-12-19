@@ -1,9 +1,12 @@
 package com.ofmesh.backend.exception;
 
+import org.springframework.security.authentication.DisabledException;
+
 import java.time.OffsetDateTime;
 
-public class AccountBannedException extends RuntimeException {
-    private final OffsetDateTime banUntil; // null = 永久封禁
+public class AccountBannedException extends DisabledException {
+
+    private final OffsetDateTime banUntil; // null = 永久
     private final String banReason;
 
     public AccountBannedException(OffsetDateTime banUntil, String banReason) {
@@ -12,6 +15,11 @@ public class AccountBannedException extends RuntimeException {
         this.banReason = banReason;
     }
 
-    public OffsetDateTime getBanUntil() { return banUntil; }
-    public String getBanReason() { return banReason; }
+    public OffsetDateTime getBanUntil() {
+        return banUntil;
+    }
+
+    public String getBanReason() {
+        return banReason;
+    }
 }

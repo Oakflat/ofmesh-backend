@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import com.ofmesh.backend.exception.AccountBannedException;
 
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
@@ -25,12 +26,18 @@ public class UserDetailsServiceImpl implements UserDetailsService {
                 .or(() -> userRepository.findByEmail(loginKey))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        // 封禁判断：永久封禁（banUntil=null）或未到期封禁，都直接拒绝
         if (user.getAccountStatus() == AccountStatus.BANNED) {
             OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+
             if (user.getBanUntil() == null || user.getBanUntil().isAfter(now)) {
-                throw new DisabledException("账号已封禁: " + (user.getBanReason() == null ? "" : user.getBanReason()));
+                throw new AccountBannedException(user.getBanUntil(), user.getBanReason());
             }
+
+            // ✅ 到期：顺手收敛（可选）
+            user.setAccountStatus(AccountStatus.ACTIVE);
+            user.setBanUntil(null);
+            user.setBanReason(null);
+            userRepository.save(user);
         }
 
         return user;

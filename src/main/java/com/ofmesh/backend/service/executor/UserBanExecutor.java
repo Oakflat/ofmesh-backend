@@ -32,7 +32,6 @@ public class UserBanExecutor implements AdminRequestExecutor {
         User target = userRepo.findById(request.getTargetUserId())
                 .orElseThrow(() -> new RuntimeException("目标用户不存在"));
 
-        // ✅ 最高权限保护：SUPER_ADMIN 不可被封
         if (target.getRole() == Role.SUPER_ADMIN) {
             throw new RuntimeException("禁止封禁 SUPER_ADMIN");
         }
@@ -41,25 +40,37 @@ public class UserBanExecutor implements AdminRequestExecutor {
             JsonNode node = objectMapper.readTree(request.getPayload() == null ? "{}" : request.getPayload());
 
             boolean permanent = node.path("permanent").asBoolean(false);
-            String untilStr = node.path("until").asText(null);
-            String banReason = node.path("banReason").asText(null);
+
+            // ✅ 统一字段名：banUntil（兼容旧 until）
+            String untilStr = textOrNull(node, "banUntil");
+            if (untilStr == null) untilStr = textOrNull(node, "until"); // backward compatible
+
+            // ✅ banReason 兜底：优先 payload，其次工单 reason
+            String banReason = textOrNull(node, "banReason");
+            if (banReason == null || banReason.isBlank()) {
+                banReason = (request.getReason() == null || request.getReason().isBlank())
+                        ? "N/A"
+                        : request.getReason().trim();
+            } else {
+                banReason = banReason.trim();
+            }
 
             OffsetDateTime until = null;
 
             if (!permanent) {
                 if (untilStr == null || untilStr.isBlank()) {
-                    throw new RuntimeException("非永久封禁必须提供 until");
+                    throw new RuntimeException("非永久封禁必须提供 banUntil");
                 }
                 until = parseUntil(untilStr);
 
                 if (!until.isAfter(OffsetDateTime.now(ZoneOffset.UTC))) {
-                    throw new RuntimeException("until 必须是未来时间");
+                    throw new RuntimeException("banUntil 必须是未来时间");
                 }
             }
 
             target.setAccountStatus(AccountStatus.BANNED);
             target.setBanUntil(until);
-            target.setBanReason((banReason == null || banReason.isBlank()) ? "N/A" : banReason.trim());
+            target.setBanReason(banReason);
             userRepo.save(target);
 
             return permanent ? "已永久封禁" : ("已封禁至 " + until);
@@ -67,6 +78,14 @@ public class UserBanExecutor implements AdminRequestExecutor {
             throw new RuntimeException("执行 USER_BAN 失败: " + e.getMessage());
         }
     }
+
+    private static String textOrNull(JsonNode node, String field) {
+        JsonNode v = node.get(field);
+        if (v == null || v.isNull()) return null;
+        String s = v.asText(null);
+        return (s == null || s.isBlank()) ? null : s;
+    }
+
 
     private OffsetDateTime parseUntil(String input) {
         try {
