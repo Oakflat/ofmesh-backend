@@ -1,9 +1,7 @@
 package com.ofmesh.backend.user.profile.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,8 +16,31 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @Table(name = "users")
-public class User implements UserDetails {
+@Getter
+@Setter
 
+public class User implements UserDetails {
+    // 头像：对外展示 URL（保留你现在字段名 avatar，不动前端/DTO）
+    private String avatar;
+
+    @Column(name = "banner_key")
+    private String bannerKey;
+
+    @Column(name = "banner_prev_key")
+    private String bannerPrevKey;
+
+    @Column(name = "banner_updated_at")
+    private OffsetDateTime bannerUpdatedAt;
+
+    // ✅ 新增：内部 objectKey（用于校验/回滚/GC）
+    @Column(name = "avatar_key")
+    private String avatarKey;
+
+    @Column(name = "avatar_prev_key")
+    private String avatarPrevKey;
+
+    @Column(name = "avatar_updated_at")
+    private OffsetDateTime avatarUpdatedAt;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -32,8 +53,6 @@ public class User implements UserDetails {
 
     @Column(nullable = false)
     private String password;
-
-    private String avatar;
 
     @Column(name = "mc_uuid")
     private String mcUuid;

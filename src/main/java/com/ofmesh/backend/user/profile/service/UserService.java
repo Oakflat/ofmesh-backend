@@ -5,11 +5,16 @@ import com.ofmesh.backend.user.profile.entity.User;
 import com.ofmesh.backend.user.badge.entity.UserBadge;
 import com.ofmesh.backend.user.badge.repository.UserBadgeRepository;
 import com.ofmesh.backend.user.profile.repository.UserRepository;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
-
+@Data
+@Getter
+@Setter
 @Service
 public class UserService {
 
@@ -49,6 +54,8 @@ public class UserService {
         // 4. 填充默认值 (因为数据库还没这些字段)
         dto.setBio("热爱 Minecraft，热爱开源。");
         dto.setLevel(1);
+        dto.setBannerKey(user.getBannerKey());
+        dto.setBannerPrevKey(user.getBannerPrevKey());
 
         return dto;
     }

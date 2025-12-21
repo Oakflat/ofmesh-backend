@@ -11,6 +11,14 @@ public class UserProfileDTO {
     private Integer level; // 同上
     private String createdAt;
     private List<String> badges;
+    private String bannerKey;
+    private String bannerPrevKey;
+
+    public String getBannerKey() { return bannerKey; }
+    public void setBannerKey(String bannerKey) { this.bannerKey = bannerKey; }
+
+    public String getBannerPrevKey() { return bannerPrevKey; }
+    public void setBannerPrevKey(String bannerPrevKey) { this.bannerPrevKey = bannerPrevKey; }
 
     // === 手动 Getter / Setter ===
     public Long getId() { return id; }
