@@ -7,9 +7,9 @@ import com.ofmesh.backend.user.profile.entity.Role;
 import com.ofmesh.backend.user.profile.entity.User;
 import com.ofmesh.backend.user.profile.repository.UserRepository;
 import com.ofmesh.backend.common.security.JwtUtil;
-import com.ofmesh.backend.common.utils.IpUtil; // ✅ 引入 IP 工具类
+import com.ofmesh.backend.common.utils.IpUtil;
 import com.ofmesh.backend.common.mail.EmailService;
-import jakarta.servlet.http.HttpServletRequest; // ✅ 引入 Request
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -39,7 +39,7 @@ public class AuthService {
     private final EmailService emailService;
     private final StringRedisTemplate redisTemplate;
 
-    // ✅ 注入 Request 用于获取 IP
+    //  注入 Request 用于获取 IP
     private final HttpServletRequest request;
 
     public AuthService(UserRepository userRepository,
@@ -63,13 +63,13 @@ public class AuthService {
     // ==========================================
     public void sendVerificationCode(String email, String type) {
 
-        // --- ⚡ 0. 检查全局熔断 (Circuit Breaker) ---
+        // ---  0. 检查全局熔断 (Circuit Breaker) ---
         // 如果触发了熔断，6小时内所有邮件请求直接拒绝
         if (Boolean.TRUE.equals(redisTemplate.hasKey("email:circuit_breaker"))) {
             throw new RuntimeException("系统邮件服务暂时繁忙 (熔断保护中)，请 6 小时后再试");
         }
 
-        // --- 🛡️ 1. 单 IP 每日限流 (防止单人刷爆) ---
+        // ---  1. 单 IP 每日限流 (防止单人刷爆) ---
         String ip = IpUtil.getIpAddress(request);
         String today = LocalDate.now().toString(); // "2025-12-12"
         String ipLimitKey = "email:limit:ip:" + today + ":" + ip;
@@ -83,20 +83,20 @@ public class AuthService {
             throw new RuntimeException("您今日获取验证码次数已达上限");
         }
 
-        // --- 🛡️ 2. 全局每日总量检查 (2000条熔断) ---
+        // ---  2. 全局每日总量检查 (2000条熔断) ---
         String globalLimitKey = "email:limit:global:" + today;
         Long globalCount = redisTemplate.opsForValue().increment(globalLimitKey);
         if (globalCount != null && globalCount == 1) {
             redisTemplate.expire(globalLimitKey, 24, TimeUnit.HOURS);
         }
 
-        // 🚨 触发熔断逻辑：超过 2000 条，拉闸 6 小时
+        // 触发熔断逻辑：超过 2000 条，拉闸 6 小时
         if (globalCount != null && globalCount > 2000) {
             redisTemplate.opsForValue().set("email:circuit_breaker", "1", 6, TimeUnit.HOURS);
             throw new RuntimeException("系统邮件配额已耗尽，服务暂停 6 小时");
         }
 
-        // --- 🛡️ 3. 常规 60秒 冷却 ---
+        // --- 3. 常规 60秒 冷却 ---
         String rateLimitKey = "rate_limit:email:" + email;
         if (Boolean.TRUE.equals(redisTemplate.hasKey(rateLimitKey))) {
             Long expire = redisTemplate.getExpire(rateLimitKey, TimeUnit.SECONDS);
@@ -163,7 +163,7 @@ public class AuthService {
         if (key == null || key.isBlank()) throw new RuntimeException("账号不能为空");
         if (request.getPassword() == null || request.getPassword().isBlank()) throw new RuntimeException("密码不能为空");
 
-        // ✅ 0) 封禁优先：不管密码是否正确，先查库判断是否仍在封禁期
+        //  0) 封禁优先：不管密码是否正确，先查库判断是否仍在封禁期
         User preUser = userRepository.findByUsername(key)
                 .or(() -> userRepository.findByEmail(key))
                 .orElse(null);
@@ -176,7 +176,7 @@ public class AuthService {
             }
         }
 
-        // ✅ 1) 再走认证（这时剩下的失败就是 BAD_CREDENTIALS）
+        //  1) 再走认证（这时剩下的失败就是 BAD_CREDENTIALS）
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(key, request.getPassword())

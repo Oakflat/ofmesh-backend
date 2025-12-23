@@ -8,10 +8,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
+    private String bannerKey;
+    private String bannerPrevKey; // 可选，但建议一起加
 
     private final UserService userService;
 
