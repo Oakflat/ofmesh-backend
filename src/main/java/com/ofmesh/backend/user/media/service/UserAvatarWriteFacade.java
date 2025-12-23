@@ -35,13 +35,13 @@ public class UserAvatarWriteFacade {
     }
 
     /**
-     * ✅ 只保留 current + prev
+     *  只保留 current + prev
      * - oldCurrent：上一张（会被写入 prev）
      * - oldPrev：上上张（应该进 GC，7 天后删）
      */
     @Transactional
     public AvatarShiftResult updateAvatarAndReturnOldKeys(Long userId, String newKey, String newUrl) {
-        // ✅ 行锁，防止并发连点导致指针乱序
+        //  行锁，防止并发连点导致指针乱序
         User u = userRepository.findByIdForUpdate(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 

@@ -31,7 +31,7 @@ public class UserUnbanExecutor implements AdminRequestExecutor {
         User target = userRepo.findById(request.getTargetUserId())
                 .orElseThrow(() -> new RuntimeException("目标用户不存在"));
 
-        // ✅ 不限制 SUPER_ADMIN 解封（解封不会造成权限风险）
+        //  不限制 SUPER_ADMIN 解封（解封不会造成权限风险）
         // 如果你希望严格，也可以允许，但一般不需要拦。
 
         // 可选：读取 payload，做审计信息回显（不影响执行）
@@ -41,7 +41,7 @@ public class UserUnbanExecutor implements AdminRequestExecutor {
             unbanReason = node.path("unbanReason").asText(null);
         } catch (Exception ignore) {}
 
-        // ✅ 解封：状态收敛（幂等）
+        //  解封：状态收敛（幂等）
         target.setAccountStatus(AccountStatus.ACTIVE);
         target.setBanUntil(null);
         target.setBanReason(null);

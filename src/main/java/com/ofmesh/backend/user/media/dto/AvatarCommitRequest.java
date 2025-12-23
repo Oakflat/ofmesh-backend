@@ -7,5 +7,4 @@ import lombok.Setter;
 @Getter
 public class AvatarCommitRequest {
     private String objectKey;
-
 }

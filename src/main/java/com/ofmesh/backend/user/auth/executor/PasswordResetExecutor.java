@@ -40,7 +40,7 @@ public class PasswordResetExecutor implements AdminRequestExecutor {
         target.setPassword(passwordEncoder.encode(tempPassword));
         userRepo.save(target);
 
-        // ✅ 传 3 个参数：邮箱、用户名、临时密码
+        //  传 3 个参数：邮箱、用户名、临时密码
         emailService.sendTemporaryPassword(target.getEmail(), target.getUsername(), tempPassword);
 
         return "临时密码已发送至用户邮箱";

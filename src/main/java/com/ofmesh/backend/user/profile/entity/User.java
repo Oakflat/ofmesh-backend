@@ -32,7 +32,7 @@ public class User implements UserDetails {
     @Column(name = "banner_updated_at")
     private OffsetDateTime bannerUpdatedAt;
 
-    // ✅ 新增：内部 objectKey（用于校验/回滚/GC）
+    //内部 objectKey（用于校验/回滚/GC）
     @Column(name = "avatar_key")
     private String avatarKey;
 
@@ -154,7 +154,7 @@ public class User implements UserDetails {
     @Override
     public boolean isAccountNonExpired() { return true; }
 
-    // ✅ 封禁 => locked
+    // 封禁 => locked
     @Override
     public boolean isAccountNonLocked() {
         return !isCurrentlyBanned();
@@ -163,7 +163,7 @@ public class User implements UserDetails {
     @Override
     public boolean isCredentialsNonExpired() { return true; }
 
-    // ✅ 封禁 => disabled
+    // 封禁 => disabled
     @Override
     public boolean isEnabled() {
         return !isCurrentlyBanned();

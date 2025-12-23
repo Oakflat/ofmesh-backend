@@ -26,7 +26,7 @@ public class AvatarGcService {
     public void enqueueIfNeeded(long userId, String oldPrevKey) {
         if (oldPrevKey == null || oldPrevKey.isBlank()) return;
 
-        // ✅ 仍被引用（current/prev）就别入队
+        //  仍被引用（current/prev）就别入队
         if (userRepository.countAvatarKeyReferences(oldPrevKey) > 0) return;
 
         AvatarGcQueueItem item = new AvatarGcQueueItem();

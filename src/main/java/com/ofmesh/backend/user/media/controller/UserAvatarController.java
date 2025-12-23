@@ -6,6 +6,7 @@ import com.ofmesh.backend.user.media.dto.AvatarUploadUrlResponse;
 import com.ofmesh.backend.user.media.gc.AvatarGcService;
 import com.ofmesh.backend.user.media.service.AvatarService;
 import com.ofmesh.backend.user.media.service.UserAvatarWriteFacade;
+
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -53,10 +54,10 @@ public class UserAvatarController {
 
         String publicUrl = avatarService.buildPublicUrl(objectKey);
 
-        // ✅ 返回 oldCurrent（给前端） + oldPrev（给 GC）
+        //  返回 oldCurrent（给前端） + oldPrev（给 GC）
         var shift = userAvatarWriteFacade.updateAvatarAndReturnOldKeys(userId, objectKey, publicUrl);
 
-        // ✅ 只入队上上张（7天后删）
+        //  只入队上上张（7天后删）
         avatarGcService.enqueueIfNeeded(userId, shift.oldPrevKey());
 
         return new java.util.HashMap<String, Object>() {{

@@ -33,7 +33,7 @@ public class AvatarGcJob {
         for (AvatarGcQueueItem item : due) {
             String key = item.getObjectKey();
 
-            // ✅ 安全网：仍被引用就别删
+            //  安全网：仍被引用就别删
             if (userRepository.countAvatarKeyReferences(key) > 0) {
                 item.setStatus("SKIPPED");
                 item.setLastError("still referenced by users");

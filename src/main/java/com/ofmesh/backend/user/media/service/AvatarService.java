@@ -112,7 +112,7 @@ public class AvatarService {
                     .key(objectKey)
                     .build());
         } catch (NoSuchKeyException e) {
-            // ✅ 不存在也当成功
+            //  不存在也当成功
         } catch (S3Exception e) {
             if (e.statusCode() == 404) return;
             throw e;

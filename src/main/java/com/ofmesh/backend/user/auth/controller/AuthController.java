@@ -17,7 +17,7 @@ public class AuthController {
 
     private final AuthService authService;
 
-    // ✅ 手动构造函数注入
+    //  手动构造函数注入
     public AuthController(AuthService authService) {
         this.authService = authService;
     }

@@ -4,7 +4,7 @@ public class RegisterRequest {
     private String username;
     private String email;
     private String password;
-    private String code; // ✅ 新增：验证码
+    private String code; //  新增：验证码
 
     // === 手动 Getter / Setter ===
     public String getUsername() { return username; }

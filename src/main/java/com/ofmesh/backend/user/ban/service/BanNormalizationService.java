@@ -59,7 +59,7 @@ public class BanNormalizationService {
 
         if (updated <= 0) return false; // 说明已被别人收敛/或 ban 被延长/状态已变
 
-        // ✅ 写审计：AdminRequest 记录“到期解封兜底”
+        //  写审计：AdminRequest 记录“到期解封兜底”
         AdminRequest ar = new AdminRequest();
         ar.setType(AdminRequestType.USER_UNBAN);
         ar.setStatus(AdminRequestStatus.EXECUTED);
@@ -82,7 +82,7 @@ public class BanNormalizationService {
 
         adminRequestRepo.save(ar);
 
-        // ✅ 同步内存态（避免调用方继续拿着旧对象判断 banned）
+        //  同步内存态（避免调用方继续拿着旧对象判断 banned）
         user.setAccountStatus(AccountStatus.ACTIVE);
         user.setBanUntil(null);
         user.setBanReason(null);

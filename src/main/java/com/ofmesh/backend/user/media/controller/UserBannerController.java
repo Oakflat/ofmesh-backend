@@ -75,7 +75,7 @@ public class UserBannerController {
     }
 
     /**
-     * ✅ commit：写入 users.banner_key，并只保留“上一个”
+     *  commit：写入 users.banner_key，并只保留“上一个”
      * POST /users/me/banner/commit
      */
     @PostMapping("/commit")
@@ -85,10 +85,10 @@ public class UserBannerController {
 
         avatarService.validateBannerOwnershipOrThrow(userId, objectKey);
 
-        // ✅ 关键：banner 用 bannerMaxBytes 校验，不能复用 avatar 的 2MB 校验
+        //  关键：banner 用 bannerMaxBytes 校验，不能复用 avatar 的 2MB 校验
         avatarService.validateUploadedBannerObjectOrThrow(objectKey);
 
-        // ✅ 写库：bannerPrevKey <- bannerKey, bannerKey <- newKey
+        //  写库：bannerPrevKey <- bannerKey, bannerKey <- newKey
         var shift = writeFacade.updateBannerAndReturnOldKeys(userId, objectKey);
 
         String publicUrl = avatarService.buildPublicUrl(objectKey);
@@ -102,7 +102,7 @@ public class UserBannerController {
     }
 
     /**
-     * ✅ rollback：只能回到上一个 banner
+     *  rollback：只能回到上一个 banner
      * POST /users/me/banner/rollback
      */
     @PostMapping("/rollback")

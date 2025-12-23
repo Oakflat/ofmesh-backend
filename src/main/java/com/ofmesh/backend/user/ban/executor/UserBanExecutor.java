@@ -46,11 +46,11 @@ public class UserBanExecutor implements AdminRequestExecutor {
 
             boolean permanent = node.path("permanent").asBoolean(false);
 
-            // ✅ 统一字段名：banUntil（兼容旧 until）
+            //  统一字段名：banUntil（兼容旧 until）
             String untilStr = textOrNull(node, "banUntil");
             if (untilStr == null) untilStr = textOrNull(node, "until"); // backward compatible
 
-            // ✅ banReason 兜底：优先 payload，其次工单 reason
+            //  banReason 兜底：优先 payload，其次工单 reason
             String banReason = textOrNull(node, "banReason");
             if (banReason == null || banReason.isBlank()) {
                 banReason = (request.getReason() == null || request.getReason().isBlank())
